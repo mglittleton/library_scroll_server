@@ -1,0 +1,29 @@
+{
+  "name": "library_scroll_server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mglittleton/library_scroll_server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mglittleton/library_scroll_server/issues"
+  },
+  "homepage": "https://github.com/mglittleton/library_scroll_server#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "knex": "^0.21.19",
+    "sqlite3": "^5.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
+  }
+}
