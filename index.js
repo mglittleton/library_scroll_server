@@ -5,7 +5,7 @@ const cors = require('./middleware/cors');
 const db = require('./middleware/helpers');
 const auth = require('./middleware/authenticate');
 const server = express();
-const port = process.env.PORT || 5000; 
+const port = process.env.PORT || 5000;
 let activeUser = 0;
 
 server.use(express.json(), cors);
