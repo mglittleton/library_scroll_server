@@ -1,3 +1,4 @@
+require('dotenv').config()
 const express = require('express');
 const bcrypt = require('bcryptjs');
 
@@ -28,8 +29,6 @@ let nextId = 3;
 // -- GET --
 
 /*
-  // active user
-    // .get('/user/:id')
   // list of books
     // .get('/user/:id/books')
   // one book description
@@ -39,6 +38,10 @@ let nextId = 3;
   // share status of user id
     // .get('/user/:id/status')
 */
+
+  // active user
+    // .get('/user/:id')
+server.get('/user/:id')
 
 server.get('/', (req, res) => {
   res.status(200).send('Hello World');
