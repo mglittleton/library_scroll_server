@@ -3,9 +3,9 @@ const jwt = require('jsonwebtoken');
 const secret = process.env.JWT_SECRET_PHRASE;
 
 module.exports = {
-  generateToken: (user) => {
+  generateToken: (id) => {
     const payload = {
-      userID: user.id,
+      userID: id,
     };
     const options = {
       expiresIn: '1yr',
@@ -22,7 +22,7 @@ module.exports = {
         if (err) {
           res.status(401).json({ message: 'Invalid token' });
         } else {
-          req.userID = decodedToken.userID
+          req.userID = decodedToken.userID;
           next();
         }
       });

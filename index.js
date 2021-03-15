@@ -29,7 +29,7 @@ server.get('/user/:id', auth.protected, (req, res) => {
   activeUser = req.userID;
   db.getUserInfo(infoUser)
     .then((user) => {
-      const authUser = user[0];
+      const authUser = user;
       // checking to make sure the user searched for exists
       if (authUser != undefined) {
         authUser.auth = activeUser == infoUser ? true : false;
@@ -91,46 +91,109 @@ server.get('/user/:id/books', (req, res) => {
 // -------------------------------------------------
 //          -- POST --
 
-/*
-  // register
-    // .post('/user/register', {email, password})
-  // login
-    // .post('/user/login', {email, password})
-  // add a book
-    // .post('/user/:id/books', {isbn})
-*/
+// register
+server.post('/user/register', (req, res) => {
+  const creds = req.body;
+  creds.password = bcrypt.hashSync(creds.password, 12);
+  db.addUser(creds)
+    .then((ids) => {
+      const id = ids[0];
+      db.getUserInfo(id)
+        .then((user) => {
+          activeUser = user.id;
+          const token = auth.generateToken(activeUser);
+          res.status(201).json({ id: activeUser, token, message: 'hello' });
+        })
+        .catch((err) => res.status(500).send(err));
+    })
+    .catch((err) => {
+      res.status(500).send(err);
+    });
+});
+
+// login
+server.post('/user/login', (req, res) => {
+  const creds = req.body;
+  db.login(creds)
+    .then((user) => {
+      if (user && bcrypt.compareSync(creds.password, user.password)) {
+        activeUser = user.id;
+        const token = auth.generateToken(activeUser);
+        res.json({
+          message: `Welcome user#${activeUser}`,
+          token,
+          id: activeUser,
+        });
+      } else {
+        res.status(401).send('Shove off, faker!');
+      }
+    })
+    .catch((err) => {
+      res.status(500).send(err);
+    });
+});
+
+// add a book
+server.post('/user/:id/books', (req, res) => {
+  const id = req.params.id;
+  const book = req.body.book;
+  if (id == infoUser && id == activeUser) {
+    db.addBook(book, activeUser)
+      .then(() => {
+        db.getBookList(activeUser)
+          .then((books) => {
+            // response - all is good
+            res.status(201).json(books);
+          })
+          .catch((err) => {
+            // response - typical server error
+            res.status(500).send(err);
+          });
+      })
+      .catch((err) => {
+        // response - typical server error
+        res.status(500).send(err);
+      });
+  } else {
+    // response - sharing is not turned on
+    res.status(401).send('You are not authorized to this action');
+  }
+});
 
 // ------------------------------------------------
 //           -- PUT --
 
-/*
-  // change password
-    // .put('/user/:id', {email, curr_password, new_password})
-  // change a book description
-    // .put('/user/:id'/books/:isbn, {description})
-  // clear a book description
-    // .put('/user/:id'/books/:isbn, {})
-    // ** should this be a delete?
-  // change a book ISBN ** probably doesn't need to be here
-    // .delete('/user/:id/books/:isbn')
-    // .post('/user/:id/books', {isbn})
-  // change school colors
-    // .put('/user/:id/color', {rgb hex color})
-  // change share status
-    // .put('/user/:id/status', {boolean})
-*/
+// change password
+// .put('/user/:id', {email, curr_password, new_password})
+
+// change a book description
+// .put('/user/:id'/books/:isbn, {description})
+
+// clear a book description
+// .put('/user/:id'/books/:isbn, {})
+// ** should this be a delete?
+
+// change a book ISBN ** probably doesn't need to be here
+// .delete('/user/:id/books/:isbn')
+// .post('/user/:id/books', {isbn})
+
+// change school colors
+// .put('/user/:id/color', {rgb hex color})
+
+// change share status
+// .put('/user/:id/status', {boolean})
 
 // ------------------------------------------------
 //           -- DELETE --
 
-/*
-  // delete user account
-    // .delete('/user/:id')
-  // delete book
-    // .delete('/user/:id/books/:isbn')
-  // delete school colors
-    // .delete('/user/:id/color')
-*/
+// delete user account
+// .delete('/user/:id')
+
+// delete book
+// .delete('/user/:id/books/:isbn')
+
+// delete school colors
+// .delete('/user/:id/color')
 
 // -- LISTEN --
 
