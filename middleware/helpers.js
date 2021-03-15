@@ -18,6 +18,11 @@ const getUserInfo = (id) => {
     );
 };
 
+const getBookList = (id) => {
+  return db('books').where('user_id', id);
+};
+
 module.exports = {
   getUserInfo: getUserInfo,
+  getBookList: getBookList,
 };

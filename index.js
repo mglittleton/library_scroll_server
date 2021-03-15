@@ -7,7 +7,11 @@ const db = require('./middleware/helpers');
 const auth = require('./middleware/authenticate');
 const server = express();
 const port = process.env.PORT || 5000;
+
+// variables used to track authorization to information
 let activeUser = 0;
+let infoUser = 0;
+let sharing = false;
 
 server.use(express.json(), cors);
 
@@ -21,21 +25,23 @@ server.get('/', (req, res) => {
 // get active user
 // return userinfo (colors) if either auth or guest
 server.get('/user/:id', auth.protected, (req, res) => {
-  const id = req.params.id;
-  const userID = req.userID;
-  db.getUserInfo(id)
+  infoUser = req.params.id;
+  activeUser = req.userID;
+  db.getUserInfo(infoUser)
     .then((user) => {
       const authUser = user[0];
       // checking to make sure the user searched for exists
       if (authUser != undefined) {
-        authUser.auth = userID == id ? true : false;
+        authUser.auth = activeUser == infoUser ? true : false;
         authUser.sharing = authUser.sharing ? true : false;
         // allows access to info if authorized user or info is shared
         if (authUser.auth || authUser.sharing) {
           // response - all is good
+          sharing = true;
           res.json(authUser);
         } else {
           // response - no authorization or sharing
+          sharing = false;
           res.status(401).send('You are not authorized to this info');
         }
       } else {
@@ -51,7 +57,29 @@ server.get('/user/:id', auth.protected, (req, res) => {
 
 // list of books
 // return array of books if either auth or guest
-// .get('/user/:id/books')
+server.get('/user/:id/books', (req, res) => {
+  const id = req.params.id;
+  db.getBookList(id)
+    .then((books) => {
+      // checking for authorization
+      if (sharing && id == infoUser) {
+        if (books.length > 0) {
+          // response - all is good
+          res.json(books);
+        } else {
+          // response - info user has no book list
+          res.status(404).send('No books found');
+        }
+      } else {
+        // response - sharing is not turned on
+        res.status(401).send('You are not authorized to this info');
+      }
+    })
+    .catch((err) => {
+      // response - typical server error
+      res.status(500).send(err);
+    });
+});
 
 // one book info
 // return book object
