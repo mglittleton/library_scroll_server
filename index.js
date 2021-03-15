@@ -11,59 +11,57 @@ let activeUser = 0;
 
 server.use(express.json(), cors);
 
-const hobbits = [
-  {
-    id: 1,
-    name: 'Samwise Gamgee',
-    age: 111,
-  },
-  {
-    id: 2,
-    name: 'Frodo Baggins',
-    age: 33,
-  },
-];
-
-let nextId = 3;
-
-// -- GET --
-/*
-  // list of books
-    // .get('/user/:id/books')
-  // one book description
-    // .get('/user/:id/books/:isbn')
-  // school colors
-    // .get('/user/:id/color')
-  // share status of user id
-    // .get('/user/:id/status')
-*/
+// --------------------------------------------
+//          -- GET --
 
 server.get('/', (req, res) => {
   res.status(200).send('Hello World');
 });
 
 // get active user
-// return userinfo (colors) if either auth
+// return userinfo (colors) if either auth or guest
 server.get('/user/:id', auth.protected, (req, res) => {
-  const id = req.params.id
-  const userID = req.userID
-  if (userID != id) {
-    console.log('ids do not match')
-  }
-  db.getUserInfo(id).then().catch()
+  const id = req.params.id;
+  const userID = req.userID;
+  db.getUserInfo(id)
+    .then((user) => {
+      const authUser = user[0];
+      // checking to make sure the user searched for exists
+      if (authUser != undefined) {
+        authUser.auth = userID == id ? true : false;
+        authUser.sharing = authUser.sharing ? true : false;
+        // allows access to info if authorized user or info is shared
+        if (authUser.auth || authUser.sharing) {
+          // response - all is good
+          res.json(authUser);
+        } else {
+          // response - no authorization or sharing
+          res.status(401).send('You are not authorized to this info');
+        }
+      } else {
+        // response - no user found
+        res.status(404).send('This user cannot be found');
+      }
+    })
+    .catch((err) => {
+      // response - typical server error
+      res.status(500).send(err);
+    });
 });
 
-server.get('/hobbits', (req, res) => {
-  const sortField = req.query.sortby || 'id';
+// list of books
+// return array of books if either auth or guest
+// .get('/user/:id/books')
 
-  const response = hobbits.sort((a, b) =>
-    a[sortField] < b[sortField] ? -1 : 1
-  );
+// one book info
+// return book object
+// .get('/user/:id/books/:isbn')
 
-  res.status(200).json(response);
-});
+// share status of user id
+// .get('/user/:id/status')
 
-// -- POST --
+// -------------------------------------------------
+//          -- POST --
 
 /*
   // register
@@ -74,16 +72,8 @@ server.get('/hobbits', (req, res) => {
     // .post('/user/:id/books', {isbn})
 */
 
-server.post('/hobbits', (req, res) => {
-  const hobbit = req.body;
-  hobbit.id = nextId++;
-
-  hobbits.push(hobbit);
-
-  res.status(201).json(hobbits);
-});
-
-// -- PUT --
+// ------------------------------------------------
+//           -- PUT --
 
 /*
   // change password
@@ -102,19 +92,8 @@ server.post('/hobbits', (req, res) => {
     // .put('/user/:id/status', {boolean})
 */
 
-server.put('/hobbits/:id', (req, res) => {
-  const hobbit = hobbits.find((h) => h.id === req.params.id);
-
-  if (!hobbit) {
-    res.status(404).json({ message: 'That hobbit was not found' });
-  } else {
-    Object.assign(hobbit, req.body);
-
-    res.status(200).json(hobbit);
-  }
-});
-
-// -- DELETE --
+// ------------------------------------------------
+//           -- DELETE --
 
 /*
   // delete user account
@@ -124,21 +103,6 @@ server.put('/hobbits/:id', (req, res) => {
   // delete school colors
     // .delete('/user/:id/color')
 */
-
-server.delete('/hobbits/:id', (req, res) => {
-  const { id } = req.params;
-  const hobbit = hobbits.findIndex((h) => h.id == id);
-  console.log(hobbit);
-  if (hobbit == -1) {
-    res.status(404).json({ message: 'Hobbit not found' });
-  } else {
-    hobbits.splice(hobbit, 1);
-    res.status(200).json({
-      url: `/hobbits/${id}`,
-      operation: `DELETE for hobbit with id ${id}`,
-    });
-  }
-});
 
 // -- LISTEN --
 
