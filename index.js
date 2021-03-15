@@ -1,4 +1,4 @@
-require('dotenv').config()
+require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcryptjs');
 
@@ -27,7 +27,6 @@ const hobbits = [
 let nextId = 3;
 
 // -- GET --
-
 /*
   // list of books
     // .get('/user/:id/books')
@@ -39,12 +38,19 @@ let nextId = 3;
     // .get('/user/:id/status')
 */
 
-  // active user
-    // .get('/user/:id')
-server.get('/user/:id')
-
 server.get('/', (req, res) => {
   res.status(200).send('Hello World');
+});
+
+// get active user
+// return userinfo (colors) if either auth
+server.get('/user/:id', auth.protected, (req, res) => {
+  const id = req.params.id
+  const userID = req.userID
+  if (userID != id) {
+    console.log('ids do not match')
+  }
+  db.getUserInfo(id).then().catch()
 });
 
 server.get('/hobbits', (req, res) => {

@@ -22,6 +22,7 @@ module.exports = {
         if (err) {
           res.status(401).json({ message: 'Invalid token' });
         } else {
+          req.userID = decodedToken.userID
           next();
         }
       });
