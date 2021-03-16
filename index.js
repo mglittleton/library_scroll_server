@@ -5,6 +5,7 @@ const bcrypt = require('bcryptjs');
 const cors = require('./middleware/cors');
 const db = require('./middleware/helpers');
 const auth = require('./middleware/authenticate');
+const { getUserInfo } = require('./middleware/helpers');
 const server = express();
 const port = process.env.PORT || 5000;
 
@@ -12,6 +13,21 @@ const port = process.env.PORT || 5000;
 let activeUser = 0;
 let infoUser = 0;
 let sharing = false;
+
+// TODO maybe consider cleaning up this and other "helper" function code here to another file
+const catchPhrase = (err, res) => {
+  // response - typical server error
+  res.status(500).send(err);
+};
+
+const pullBooks = (id, res) => {
+  db.getBookList(id)
+    .then((books) => {
+      // response - all is good
+      res.status(201).json(books);
+    })
+    .catch((err) => catchPhrase(err, res));
+};
 
 server.use(express.json(), cors);
 
@@ -42,21 +58,19 @@ server.get('/user/:id', auth.protected, (req, res) => {
         } else {
           // response - no authorization or sharing
           sharing = false;
-          res.status(401).send('You are not authorized to this info');
+          res.status(403).send('You are not authorized to this info');
         }
       } else {
         // response - no user found
         res.status(404).send('This user cannot be found');
       }
     })
-    .catch((err) => {
-      // response - typical server error
-      res.status(500).send(err);
-    });
+    .catch((err) => catchPhrase(err, res));
 });
 
 // list of books
 // return array of books if either auth or guest
+// TODO this seems out of place and should be rewritten using pullBooks()
 server.get('/user/:id/books', (req, res) => {
   const id = req.params.id;
   db.getBookList(id)
@@ -72,13 +86,10 @@ server.get('/user/:id/books', (req, res) => {
         }
       } else {
         // response - sharing is not turned on
-        res.status(401).send('You are not authorized to this info');
+        res.status(403).send('You are not authorized to this info');
       }
     })
-    .catch((err) => {
-      // response - typical server error
-      res.status(500).send(err);
-    });
+    .catch((err) => catchPhrase(err, res));
 });
 
 // one book info
@@ -106,9 +117,7 @@ server.post('/user/register', (req, res) => {
         })
         .catch((err) => res.status(500).send(err));
     })
-    .catch((err) => {
-      res.status(500).send(err);
-    });
+    .catch((err) => catchPhrase(err, res));
 });
 
 // login
@@ -128,9 +137,7 @@ server.post('/user/login', (req, res) => {
         res.status(401).send('Shove off, faker!');
       }
     })
-    .catch((err) => {
-      res.status(500).send(err);
-    });
+    .catch((err) => catchPhrase(err, res));
 });
 
 // add a book
@@ -139,24 +146,11 @@ server.post('/user/:id/books', (req, res) => {
   const book = req.body.book;
   if (id == infoUser && id == activeUser) {
     db.addBook(book, activeUser)
-      .then(() => {
-        db.getBookList(activeUser)
-          .then((books) => {
-            // response - all is good
-            res.status(201).json(books);
-          })
-          .catch((err) => {
-            // response - typical server error
-            res.status(500).send(err);
-          });
-      })
-      .catch((err) => {
-        // response - typical server error
-        res.status(500).send(err);
-      });
+      .then(() => pullBooks(id, res))
+      .catch((err) => catchPhrase(err, res));
   } else {
     // response - sharing is not turned on
-    res.status(401).send('You are not authorized to this action');
+    res.status(403).send('You are not authorized to this action');
   }
 });
 
@@ -164,30 +158,111 @@ server.post('/user/:id/books', (req, res) => {
 //           -- PUT --
 
 // change password
-// .put('/user/:id', {email, curr_password, new_password})
+server.put('/user/:id', (req, res) => {
+  const id = req.params.id;
+  const { currPassword, newPassword } = req.body;
+  console.log(id, infoUser, activeUser);
+  if (id == infoUser && id == activeUser) {
+    db.checkPassword(id)
+      .then((user) => {
+        if (user && bcrypt.compareSync(currPassword, user.password)) {
+          newUser = { ...user };
+          newUser.password = bcrypt.hashSync(newPassword, 12);
+          db.editItem(id, newUser, 'users').then().catch();
+        }
+      })
+      .catch((err) => catchPhrase(err, res));
+  } else {
+    // response - sharing is not turned on
+    res.status(403).send('You are not authorized to this action');
+  }
+});
 
 // change a book description
-// .put('/user/:id'/books/:isbn, {description})
-
-// clear a book description
-// .put('/user/:id'/books/:isbn, {})
-// ** should this be a delete?
-
-// change a book ISBN ** probably doesn't need to be here
-// .delete('/user/:id/books/:isbn')
-// .post('/user/:id/books', {isbn})
+server.put('/users/:id/books/:book_id', (req, res) => {
+  const { id, book_id } = req.params;
+  const { book } = req.body;
+  if (id == infoUser && id == activeUser) {
+    db.editItem(book_id, book, 'books')
+      .then(() => pullBooks(id, res))
+      .catch((err) => catchPhrase(err, res));
+  } else {
+    // response - sharing is not turned on
+    res.status(403).send('You are not authorized to this action');
+  }
+});
 
 // change school colors
-// .put('/user/:id/color', {rgb hex color})
+server.post('/user/:id/color', (req, res) => {
+  const { id } = req.params;
+  const { color1r, color1g, color1b, color2r, color2g, color2b } = req.body;
+  if (id == infoUser && id == activeUser) {
+    db.checkPassword(id)
+      .then((user) => {
+        newUser = {
+          ...user,
+          color1r,
+          color1g,
+          color1b,
+          color2r,
+          color2g,
+          color2b,
+        };
+        db.editItem(id, newUser, 'users')
+          .then(() => {
+            res.json(newUser)
+          })
+          .catch((err) => catchPhrase(err, res));
+      })
+      .catch((err) => catchPhrase(err, res));
+  } else {
+    // response - sharing is not turned on
+    res.status(403).send('You are not authorized to this action');
+  }
+});
 
 // change share status
 // .put('/user/:id/status', {boolean})
+server.post('/user/:id/status', (req, res) => {
+  const { id } = req.params;
+  const { sharing } = req.body;
+  if (id == infoUser && id == activeUser) {
+    db.checkPassword(id)
+      .then((user) => {
+        newUser = {
+          ...user,
+          sharing
+        };
+        db.editItem(id, newUser, 'users')
+          .then(() => {
+            res.json(newUser)
+          })
+          .catch((err) => catchPhrase(err, res));
+      })
+      .catch((err) => catchPhrase(err, res));
+  } else {
+    // response - sharing is not turned on
+    res.status(403).send('You are not authorized to this action');
+  }
+});
 
 // ------------------------------------------------
 //           -- DELETE --
 
 // delete user account
-// .delete('/user/:id')
+server.delete('/user/:id', (req, res) => {
+  const { id } = req.params
+  if (id == infoUser && id == activeUser) {
+    db.deleteUser(id, "users").then((num) => {
+      if (num) {
+        res.json(num)
+      }
+    }).catch((err) => catchPhrase(err, res))
+  } else {
+    // response - sharing is not turned on
+    res.status(403).send('You are not authorized to this action');
+  }
+})
 
 // delete book
 // .delete('/user/:id/books/:isbn')

@@ -32,9 +32,21 @@ const addUser = (creds) => {
   return db('users').insert(creds);
 };
 
+const editItem = (id, item, database) => {
+  return db(database).where('id', id).update(item);
+};
+
 const login = (creds) => {
   return db('users').where('username', creds.username).first();
 };
+
+const checkPassword = (id) => {
+  return db('users').where('id', id).first();
+};
+
+const deleteItem = (id, database) => {
+  return db(database).where("id", id).del()
+}
 
 module.exports = {
   getUserInfo: getUserInfo,
@@ -42,4 +54,7 @@ module.exports = {
   addBook: addBook,
   addUser: addUser,
   login: login,
+  checkPassword: checkPassword,
+  editItem: editItem,
+  deleteItem: deleteItem
 };
