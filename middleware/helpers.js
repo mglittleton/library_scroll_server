@@ -19,6 +19,10 @@ const getUserInfo = (id) => {
     .first();
 };
 
+const getAllUsers = () => {
+  return db('users');
+};
+
 const getBookList = (id) => {
   return db('books').where('user_id', id);
 };
@@ -45,8 +49,8 @@ const checkPassword = (id) => {
 };
 
 const deleteItem = (id, database) => {
-  return db(database).where("id", id).del()
-}
+  return db(database).where('id', id).del();
+};
 
 module.exports = {
   getUserInfo: getUserInfo,
@@ -56,5 +60,6 @@ module.exports = {
   login: login,
   checkPassword: checkPassword,
   editItem: editItem,
-  deleteItem: deleteItem
+  deleteItem: deleteItem,
+  getAllUsers: getAllUsers,
 };

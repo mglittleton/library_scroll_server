@@ -103,6 +103,13 @@ server.get('/user/:id/books', (req, res) => {
 // share status of user id
 // .get('/user/:id/status')
 
+//get all users
+server.get('/admin', (req, res) => {
+  db.getAllUsers().then(users => {
+    res.json(users)
+  }).catch(err => catchPhrase(err, res))
+})
+
 // -------------------------------------------------
 //          -- POST --
 
