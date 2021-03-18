@@ -29,6 +29,11 @@ const pullBooks = (id, res) => {
     .catch((err) => catchPhrase(err, res));
 };
 
+// response - sharing is not turned on or user is otherwise not authorized
+const notAuthorized = (res) => {
+  res.status(403).send('You are not authorized to this info');
+};
+
 server.use(express.json(), cors);
 
 // --------------------------------------------
@@ -58,7 +63,7 @@ server.get('/user/:id', auth.protected, (req, res) => {
         } else {
           // response - no authorization or sharing
           sharing = false;
-          res.status(403).send('You are not authorized to this info');
+          notAuthorized(res);
         }
       } else {
         // response - no user found
@@ -85,8 +90,7 @@ server.get('/user/:id/books', (req, res) => {
           res.status(404).send('No books found');
         }
       } else {
-        // response - sharing is not turned on
-        res.status(403).send('You are not authorized to this info');
+        notAuthorized(res);
       }
     })
     .catch((err) => catchPhrase(err, res));
@@ -149,8 +153,7 @@ server.post('/user/:id/books', (req, res) => {
       .then(() => pullBooks(id, res))
       .catch((err) => catchPhrase(err, res));
   } else {
-    // response - sharing is not turned on
-    res.status(403).send('You are not authorized to this action');
+    notAuthorized(res);
   }
 });
 
@@ -173,8 +176,7 @@ server.put('/user/:id', (req, res) => {
       })
       .catch((err) => catchPhrase(err, res));
   } else {
-    // response - sharing is not turned on
-    res.status(403).send('You are not authorized to this action');
+    notAuthorized(res);
   }
 });
 
@@ -187,8 +189,7 @@ server.put('/users/:id/books/:book_id', (req, res) => {
       .then(() => pullBooks(id, res))
       .catch((err) => catchPhrase(err, res));
   } else {
-    // response - sharing is not turned on
-    res.status(403).send('You are not authorized to this action');
+    notAuthorized(res);
   }
 });
 
@@ -210,14 +211,13 @@ server.post('/user/:id/color', (req, res) => {
         };
         db.editItem(id, newUser, 'users')
           .then(() => {
-            res.json(newUser)
+            res.json(newUser);
           })
           .catch((err) => catchPhrase(err, res));
       })
       .catch((err) => catchPhrase(err, res));
   } else {
-    // response - sharing is not turned on
-    res.status(403).send('You are not authorized to this action');
+    notAuthorized(res);
   }
 });
 
@@ -231,18 +231,17 @@ server.post('/user/:id/status', (req, res) => {
       .then((user) => {
         newUser = {
           ...user,
-          sharing
+          sharing,
         };
         db.editItem(id, newUser, 'users')
           .then(() => {
-            res.json(newUser)
+            res.json(newUser);
           })
           .catch((err) => catchPhrase(err, res));
       })
       .catch((err) => catchPhrase(err, res));
   } else {
-    // response - sharing is not turned on
-    res.status(403).send('You are not authorized to this action');
+    notAuthorized(res);
   }
 });
 
@@ -251,24 +250,44 @@ server.post('/user/:id/status', (req, res) => {
 
 // delete user account
 server.delete('/user/:id', (req, res) => {
-  const { id } = req.params
+  const { id } = req.params;
   if (id == infoUser && id == activeUser) {
-    db.deleteUser(id, "users").then((num) => {
-      if (num) {
-        res.json(num)
-      }
-    }).catch((err) => catchPhrase(err, res))
+    db.deleteItem(id, 'books')
+      .then((num) => {
+        if (num) {
+          res.json(num);
+        } else {
+          res.send('No user found')
+        }
+      })
+      .catch((err) => catchPhrase(err, res));
   } else {
-    // response - sharing is not turned on
-    res.status(403).send('You are not authorized to this action');
+    notAuthorized(res);
   }
-})
+});
 
 // delete book
 // .delete('/user/:id/books/:isbn')
+server.delete('/user/:id/books/:isbn', (req, res) => {
+  const { id } = req.params;
+  if (id == infoUser && id == activeUser) {
+    db.deleteUser(id, 'users')
+      .then((num) => {
+        if (num) {
+          res.json(num);
+        } else {
+          res.send("No book found")
+        }
+      })
+      .catch((err) => catchPhrase(err, res));
+  } else {
+    notAuthorized(res);
+  }
+});
 
 // delete school colors
 // .delete('/user/:id/color')
+
 
 // -- LISTEN --
 
