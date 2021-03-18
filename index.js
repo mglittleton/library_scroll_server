@@ -188,7 +188,7 @@ server.put('/user/:id', (req, res) => {
 });
 
 // change a book description
-server.put('/users/:id/books/:book_id', (req, res) => {
+server.put('/user/:id/books/:book_id', (req, res) => {
   const { id, book_id } = req.params;
   const { book } = req.body;
   if (id == infoUser && id == activeUser) {
@@ -201,7 +201,7 @@ server.put('/users/:id/books/:book_id', (req, res) => {
 });
 
 // change school colors
-server.post('/user/:id/color', (req, res) => {
+server.put('/user/:id/color', (req, res) => {
   const { id } = req.params;
   const { color1r, color1g, color1b, color2r, color2g, color2b } = req.body;
   if (id == infoUser && id == activeUser) {
@@ -230,7 +230,7 @@ server.post('/user/:id/color', (req, res) => {
 
 // change share status
 // .put('/user/:id/status', {boolean})
-server.post('/user/:id/status', (req, res) => {
+server.put('/user/:id/status', (req, res) => {
   const { id } = req.params;
   const { sharing } = req.body;
   if (id == infoUser && id == activeUser) {
@@ -258,6 +258,7 @@ server.post('/user/:id/status', (req, res) => {
 // delete user account
 server.delete('/user/:id', (req, res) => {
   const { id } = req.params;
+  console.log(infoUser, activeUser, id)
   if (id == infoUser && id == activeUser) {
     db.deleteItem(id, 'books')
       .then((num) => {
